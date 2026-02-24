@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../features/exercises/presentation/exercise_form_screen.dart';
 import '../../features/exercises/presentation/exercises_screen.dart';
 import '../../features/history/presentation/history_screen.dart';
+import '../../features/programs/presentation/program_detail_screen.dart';
+import '../../features/programs/presentation/program_form_screen.dart';
 import '../../features/programs/presentation/programs_screen.dart';
 import '../../features/progress/presentation/progress_screen.dart';
 import '../../features/workout/presentation/workout_screen.dart';
@@ -68,21 +70,25 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/programs/new',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) =>
-          const PlaceholderScreen(title: AppStrings.newProgram),
+      builder: (context, state) => const ProgramFormScreen(),
     ),
     GoRoute(
       path: '/programs/:id',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) =>
-          PlaceholderScreen(title: 'Programa #${state.pathParameters['id']}'),
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        if (id == null) return const ProgramsScreen();
+        return ProgramDetailScreen(programId: id);
+      },
     ),
     GoRoute(
       path: '/programs/:id/edit',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => PlaceholderScreen(
-        title: '${AppStrings.editProgram} #${state.pathParameters['id']}',
-      ),
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        if (id == null) return const ProgramFormScreen();
+        return ProgramFormScreen(programId: id);
+      },
     ),
     GoRoute(
       path: '/workout',

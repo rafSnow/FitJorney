@@ -51,9 +51,15 @@ class AppStrings {
   static const editProgram = 'Editar Programa';
   static const programName = 'Nome do programa';
   static const activeProgram = 'Programa ativo';
-  static const activate = 'Ativar';
+  static const activate = 'Ativar Programa';
+  static const programActivated = '\u00e9 o programa ativo agora!';
   static const noPrograms = 'Nenhum programa criado';
   static const noProgramsCta = 'Crie seu primeiro programa de treino';
+  static const selectExercise = 'Selecionar Exerc\u00edcio';
+  static const configureExercise = 'Configurar Exerc\u00edcio';
+  static const deleteProgramTitle = 'Excluir programa?';
+  static const deleteProgramMessage =
+      'Esta a\u00e7\u00e3o n\u00e3o pode ser desfeita. Todo o hist\u00f3rico deste programa ser\u00e1 preservado nas sess\u00f5es registradas.';
   static const sets = 'Séries';
   static const reps = 'Repetições';
   static const repRange = 'Range de reps';
