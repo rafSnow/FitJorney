@@ -11,9 +11,7 @@ import '../../../exercises/presentation/widgets/exercise_card.dart';
 /// Bottom sheet para selecionar um exercício e adicioná-lo a um dia do programa.
 ///
 /// Retorna o [Exercise] selecionado ou null se cancelado.
-Future<Exercise?> showExerciseSelectBottomSheet(
-  BuildContext context,
-) {
+Future<Exercise?> showExerciseSelectBottomSheet(BuildContext context) {
   return showModalBottomSheet<Exercise>(
     context: context,
     isScrollControlled: true,
@@ -68,9 +66,9 @@ class _ExerciseSelectSheetState extends ConsumerState<_ExerciseSelectSheet> {
               ),
               child: Text(
                 AppStrings.selectExercise,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
             ),
 
@@ -102,11 +100,9 @@ class _ExerciseSelectSheetState extends ConsumerState<_ExerciseSelectSheet> {
             // Lista
             Expanded(
               child: exercisesAsync.when(
-                loading: () =>
-                    const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Center(
-                  child: Text('${AppStrings.genericError}\n$e'),
-                ),
+                loading: () => const Center(child: CircularProgressIndicator()),
+                error: (e, _) =>
+                    Center(child: Text('${AppStrings.genericError}\n$e')),
                 data: (exercises) {
                   if (exercises.isEmpty) {
                     return EmptyState(

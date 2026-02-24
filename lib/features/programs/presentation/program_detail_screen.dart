@@ -31,9 +31,8 @@ class ProgramDetailScreen extends ConsumerWidget {
     final daysAsync = ref.watch(programDaysProvider(programId));
 
     return programAsync.when(
-      loading: () => const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      ),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (e, _) => Scaffold(
         appBar: AppBar(),
         body: Center(child: Text('${AppStrings.genericError}\n$e')),
@@ -45,20 +44,14 @@ class ProgramDetailScreen extends ConsumerWidget {
             body: const Center(child: Text('Programa não encontrado')),
           );
         }
-        return _ProgramDetailView(
-          program: program,
-          daysAsync: daysAsync,
-        );
+        return _ProgramDetailView(program: program, daysAsync: daysAsync);
       },
     );
   }
 }
 
 class _ProgramDetailView extends ConsumerWidget {
-  const _ProgramDetailView({
-    required this.program,
-    required this.daysAsync,
-  });
+  const _ProgramDetailView({required this.program, required this.daysAsync});
 
   final Program program;
   final AsyncValue<List<ProgramDay>> daysAsync;
@@ -116,8 +109,7 @@ class _ProgramDetailView extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             tooltip: AppStrings.editProgram,
-            onPressed: () =>
-                context.push('/programs/${program.id}/edit'),
+            onPressed: () => context.push('/programs/${program.id}/edit'),
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
@@ -141,8 +133,7 @@ class _ProgramDetailView extends ConsumerWidget {
                   title: 'Nenhum dia configurado',
                   message: 'Edite o programa para adicionar dias.',
                   actionLabel: AppStrings.editProgram,
-                  onAction: () =>
-                      context.push('/programs/${program.id}/edit'),
+                  onAction: () => context.push('/programs/${program.id}/edit'),
                 );
               }
               return ListView.builder(
@@ -152,10 +143,7 @@ class _ProgramDetailView extends ConsumerWidget {
                 ),
                 itemCount: days.length,
                 itemBuilder: (context, index) {
-                  return _DaySection(
-                    day: days[index],
-                    programId: program.id,
-                  );
+                  return _DaySection(day: days[index], programId: program.id);
                 },
               );
             },
@@ -387,10 +375,7 @@ class _DaySection extends ConsumerWidget {
                     onDelete: () => _removeExercise(context, ref, pe),
                     reorderHandle: ReorderableDragStartListener(
                       index: index,
-                      child: const Icon(
-                        Icons.drag_handle,
-                        color: Colors.grey,
-                      ),
+                      child: const Icon(Icons.drag_handle, color: Colors.grey),
                     ),
                   );
                 },

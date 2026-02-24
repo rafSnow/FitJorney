@@ -39,10 +39,8 @@ Future<ExerciseConfig?> showExerciseConfigBottomSheet(
     shape: const RoundedRectangleBorder(
       borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
     ),
-    builder: (ctx) => _ExerciseConfigSheet(
-      exerciseName: exerciseName,
-      existing: existing,
-    ),
+    builder: (ctx) =>
+        _ExerciseConfigSheet(exerciseName: exerciseName, existing: existing),
   );
 }
 

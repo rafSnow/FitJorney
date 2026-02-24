@@ -36,6 +36,11 @@ final appRouter = GoRouter(
               const NoTransitionPage(child: ExercisesScreen()),
         ),
         GoRoute(
+          path: '/programs',
+          pageBuilder: (context, state) =>
+              const NoTransitionPage(child: ProgramsScreen()),
+        ),
+        GoRoute(
           path: '/history',
           pageBuilder: (context, state) =>
               const NoTransitionPage(child: HistoryScreen()),
@@ -61,11 +66,6 @@ final appRouter = GoRouter(
         if (id == null) return const ExerciseFormScreen();
         return ExerciseFormScreen(exerciseId: id);
       },
-    ),
-    GoRoute(
-      path: '/programs',
-      parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => const ProgramsScreen(),
     ),
     GoRoute(
       path: '/programs/new',
@@ -155,8 +155,9 @@ class _ScaffoldWithNav extends StatelessWidget {
   int _currentIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
     if (location.startsWith('/exercises')) return 1;
-    if (location.startsWith('/history')) return 2;
-    if (location.startsWith('/progress')) return 3;
+    if (location.startsWith('/programs')) return 2;
+    if (location.startsWith('/history')) return 3;
+    if (location.startsWith('/progress')) return 4;
     return 0;
   }
 
@@ -175,8 +176,10 @@ class _ScaffoldWithNav extends StatelessWidget {
             case 1:
               context.go('/exercises');
             case 2:
-              context.go('/history');
+              context.go('/programs');
             case 3:
+              context.go('/history');
+            case 4:
               context.go('/progress');
           }
         },
@@ -190,6 +193,11 @@ class _ScaffoldWithNav extends StatelessWidget {
             icon: Icon(Icons.fitness_center_outlined),
             activeIcon: Icon(Icons.fitness_center),
             label: AppStrings.exercises,
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.list_alt_outlined),
+            activeIcon: Icon(Icons.list_alt),
+            label: AppStrings.programs,
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.history_outlined),
