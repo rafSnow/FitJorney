@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../features/exercises/presentation/exercise_form_screen.dart';
 import '../../features/exercises/presentation/exercises_screen.dart';
 import '../../features/history/presentation/history_screen.dart';
 import '../../features/programs/presentation/programs_screen.dart';
@@ -48,15 +49,16 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/exercises/new',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) =>
-          const PlaceholderScreen(title: AppStrings.newExercise),
+      builder: (context, state) => const ExerciseFormScreen(),
     ),
     GoRoute(
       path: '/exercises/:id',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => PlaceholderScreen(
-        title: '${AppStrings.editExercise} #${state.pathParameters['id']}',
-      ),
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['id'] ?? '');
+        if (id == null) return const ExerciseFormScreen();
+        return ExerciseFormScreen(exerciseId: id);
+      },
     ),
     GoRoute(
       path: '/programs',

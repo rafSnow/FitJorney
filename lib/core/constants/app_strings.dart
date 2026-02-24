@@ -105,6 +105,8 @@ class AppStrings {
   // Erros
   static const genericError = 'Algo deu errado. Tente novamente.';
   static const fieldRequired = 'Este campo é obrigatório';
+  static const cannotDeleteActiveProgram =
+      'Não é possível excluir: este exercício está em um programa ativo.';
 
   // Grupos musculares
   static const chest = 'Peito';
