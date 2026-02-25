@@ -12,9 +12,11 @@ import '../../../shared/widgets/fj_button.dart';
 import '../../../shared/widgets/fj_numeric_field.dart';
 import '../../../shared/widgets/loading_overlay.dart';
 import '../../programs/domain/program_exercise.dart';
+import '../domain/rest_timer_provider.dart';
 import '../domain/set_record.dart';
 import '../domain/workout_provider.dart';
 import '../domain/workout_state.dart';
+import 'rest_timer_widget.dart';
 
 /// Tela principal de sessão de treino ativa.
 class WorkoutScreen extends ConsumerStatefulWidget {
@@ -111,6 +113,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           isExtra: isExtra,
         );
 
+    // 2.2.2 — Auto-inicia cronômetro de descanso após confirmar série
+    final restSeconds = ex.restSeconds > 0 ? ex.restSeconds : 90;
+    await ref
+        .read(restTimerProvider.notifier)
+        .start(restSeconds, exerciseName: ex.exerciseName ?? '');
+
     setState(() => _isConfirming = false);
   }
 
@@ -149,6 +157,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
     );
     if (confirmed != true || !mounted) return;
     HapticFeedback.heavyImpact();
+    // Cancela o descanso ao finalizar treino
+    await ref.read(restTimerProvider.notifier).cancel();
     await ref.read(activeWorkoutProvider.notifier).finishWorkout();
     if (!mounted) return;
     context.push('/workout/summary');
@@ -178,6 +188,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    // Cancela o descanso ao abandonar treino
+    await ref.read(restTimerProvider.notifier).cancel();
     await ref.read(activeWorkoutProvider.notifier).abandonWorkout();
     if (!mounted) return;
     context.go('/');
@@ -275,6 +287,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   Widget _buildWorkout(BuildContext context, WorkoutState workout) {
     final currentIdx = workout.currentExerciseIndex;
     final totalExercises = workout.exercises.length;
+    final restTimer = ref.watch(restTimerProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -342,6 +355,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
               totalExercises,
               (i) => workout.isExerciseComplete(i),
             ),
+          ),
+          // 2.2.3 — Cronômetro de descanso (aparece entre dots e action bar)
+          RestTimerWidget(
+            state: restTimer,
+            onCancel: () => ref.read(restTimerProvider.notifier).cancel(),
+            onRestart: () => ref.read(restTimerProvider.notifier).restart(),
           ),
           _BottomActionBar(
             workout: workout,
