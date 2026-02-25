@@ -303,4 +303,40 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
       row.readTable(exercises),
     );
   }
+
+  // ─────────────── Progressão: next suggested load ───────────────
+
+  /// Busca a carga sugerida para a próxima sessão de um exercício do programa.
+  Future<double?> getNextSuggestedLoad(int programExerciseId) async {
+    final query = selectOnly(programExercises)
+      ..addColumns([programExercises.nextSuggestedLoad])
+      ..where(programExercises.id.equals(programExerciseId));
+    final row = await query.getSingleOrNull();
+    return row?.read(programExercises.nextSuggestedLoad);
+  }
+
+  /// Persiste a carga sugerida para a próxima sessão.
+  /// Chamar com `null` para limpar a sugestão.
+  Future<void> updateNextSuggestedLoad(int programExerciseId, double? load) {
+    return (update(programExercises)
+          ..where((pe) => pe.id.equals(programExerciseId)))
+        .write(ProgramExercisesCompanion(nextSuggestedLoad: Value(load)));
+  }
+
+  /// Busca os detalhes do exercício (muscleSize, exerciseType, customIncrement)
+  /// a partir do programExerciseId.
+  Future<({String muscleSize, String exerciseType, double? customIncrement})?>
+  getExerciseDetailsForProgression(int programExerciseId) async {
+    final query = select(programExercises).join([
+      innerJoin(exercises, exercises.id.equalsExp(programExercises.exerciseId)),
+    ])..where(programExercises.id.equals(programExerciseId));
+    final row = await query.getSingleOrNull();
+    if (row == null) return null;
+    final ex = row.readTable(exercises);
+    return (
+      muscleSize: ex.muscleSize,
+      exerciseType: ex.exerciseType,
+      customIncrement: ex.customIncrement,
+    );
+  }
 }

@@ -14,4 +14,7 @@ class ProgramExercises extends Table {
   IntColumn get repMax => integer()();
   IntColumn get rpeTarget => integer().nullable()();
   IntColumn get restSeconds => integer().withDefault(const Constant(90))();
+
+  /// Carga sugerida para a próxima sessão (preenchida pela progressão).
+  RealColumn get nextSuggestedLoad => real().nullable()();
 }

@@ -13,6 +13,8 @@ import '../domain/progression_engine.dart';
 import '../domain/set_record.dart';
 import '../domain/workout_provider.dart';
 import '../domain/workout_state.dart';
+import 'progression_badge_widget.dart';
+import 'progression_confirm_dialog.dart';
 
 // Provider local para análise de progressão do resumo
 final _summaryProgressionProvider = FutureProvider.autoDispose
@@ -29,13 +31,27 @@ final _summaryProgressionProvider = FutureProvider.autoDispose
         );
         final currentLoad = workout.lastLoadFor(ex.id);
 
+        // Busca incremento real com base na classificação do exercício
+        final details = await dao.getExerciseDetailsForProgression(ex.id);
+        double increment = 2.5; // fallback
+        if (details != null) {
+          increment = details.customIncrement ??
+              ProgressionConstants.getSuggestedIncrement(
+                details.muscleSize == 'large'
+                    ? MuscleSize.large
+                    : MuscleSize.small,
+                details.exerciseType == 'compound'
+                    ? ExerciseType.compound
+                    : ExerciseType.isolation,
+              );
+        }
+
         results[ex.id] = ProgressionEngine.analyze(
           sets: currentSets,
           repMin: ex.repMin,
           repMax: ex.repMax,
           currentLoad: currentLoad,
-          increment:
-              2.5, // fallback; idealmente viria do exercise.customIncrement
+          increment: increment,
           previousSessionSets: previousSets,
         );
       }
@@ -120,6 +136,7 @@ class _SummaryContent extends ConsumerWidget {
               exercise: ex,
               sets: sets,
               progression: progression,
+              currentLoad: workout.lastLoadFor(ex.id),
             );
           }),
 
@@ -248,19 +265,51 @@ class _StatItem extends StatelessWidget {
 
 // ─────────────── Card por exercício ───────────────
 
-class _ExerciseSummaryCard extends StatelessWidget {
+class _ExerciseSummaryCard extends ConsumerWidget {
   const _ExerciseSummaryCard({
     required this.exercise,
     required this.sets,
+    required this.currentLoad,
     this.progression,
   });
 
   final ProgramExercise exercise;
   final List<SetRecord> sets;
+  final double currentLoad;
   final ProgressionResult? progression;
 
+  Future<void> _handleProgressionTap(BuildContext context, WidgetRef ref) async {
+    if (progression == null || !progression!.hasAction) return;
+
+    final confirmedLoad = await showProgressionConfirmDialog(
+      context: context,
+      exerciseName: exercise.exerciseName ?? 'Exercício',
+      currentLoad: currentLoad,
+      suggestedLoad: progression!.suggestedNewLoad ?? currentLoad,
+      isIncrease: progression!.shouldIncreaseLoad,
+    );
+
+    if (confirmedLoad != null) {
+      final dao = ref.read(workoutDaoProvider);
+      await dao.updateNextSuggestedLoad(exercise.id, confirmedLoad);
+      if (context.mounted) {
+        HapticFeedback.mediumImpact();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Carga de ${confirmedLoad.toStringAsFixed(confirmedLoad % 1 == 0 ? 0 : 1)} kg salva para a próxima sessão',
+            ),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final doneSets = sets.where((s) => !s.wasSkipped).length;
 
@@ -356,7 +405,11 @@ class _ExerciseSummaryCard extends StatelessWidget {
             // Banner de progressão
             if (progression != null && progression!.hasAction) ...[
               const SizedBox(height: AppSpacing.sm),
-              _ProgressionBanner(result: progression!),
+              ProgressionBadgeWidget(
+                result: progression!,
+                currentLoad: currentLoad,
+                onTap: () => _handleProgressionTap(context, ref),
+              ),
             ],
           ],
         ),
@@ -365,55 +418,4 @@ class _ExerciseSummaryCard extends StatelessWidget {
   }
 }
 
-// ─────────────── Banner de progressão ───────────────
 
-class _ProgressionBanner extends StatelessWidget {
-  const _ProgressionBanner({required this.result});
-
-  final ProgressionResult result;
-
-  @override
-  Widget build(BuildContext context) {
-    final isIncrease = result.shouldIncreaseLoad;
-    final color = isIncrease ? AppColors.success : AppColors.warning;
-    final icon = isIncrease ? Icons.trending_up : Icons.trending_down;
-    final title = isIncrease
-        ? AppStrings.progressionDetected
-        : AppStrings.regressionDetected;
-
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.sm),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(width: AppSpacing.sm),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
-                ),
-                if (result.suggestedNewLoad != null)
-                  Text(
-                    '${AppStrings.suggestedLoad}: ${result.suggestedNewLoad!.toStringAsFixed(result.suggestedNewLoad! % 1 == 0 ? 0 : 1)} kg',
-                    style: TextStyle(color: color, fontSize: 12),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}

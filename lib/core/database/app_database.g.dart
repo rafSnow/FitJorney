@@ -1336,6 +1336,18 @@ class $ProgramExercisesTable extends ProgramExercises
     requiredDuringInsert: false,
     defaultValue: const Constant(90),
   );
+  static const VerificationMeta _nextSuggestedLoadMeta = const VerificationMeta(
+    'nextSuggestedLoad',
+  );
+  @override
+  late final GeneratedColumn<double> nextSuggestedLoad =
+      GeneratedColumn<double>(
+        'next_suggested_load',
+        aliasedName,
+        true,
+        type: DriftSqlType.double,
+        requiredDuringInsert: false,
+      );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1347,6 +1359,7 @@ class $ProgramExercisesTable extends ProgramExercises
     repMax,
     rpeTarget,
     restSeconds,
+    nextSuggestedLoad,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1432,6 +1445,15 @@ class $ProgramExercisesTable extends ProgramExercises
         ),
       );
     }
+    if (data.containsKey('next_suggested_load')) {
+      context.handle(
+        _nextSuggestedLoadMeta,
+        nextSuggestedLoad.isAcceptableOrUnknown(
+          data['next_suggested_load']!,
+          _nextSuggestedLoadMeta,
+        ),
+      );
+    }
     return context;
   }
 
@@ -1477,6 +1499,10 @@ class $ProgramExercisesTable extends ProgramExercises
         DriftSqlType.int,
         data['${effectivePrefix}rest_seconds'],
       )!,
+      nextSuggestedLoad: attachedDatabase.typeMapping.read(
+        DriftSqlType.double,
+        data['${effectivePrefix}next_suggested_load'],
+      ),
     );
   }
 
@@ -1496,6 +1522,9 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
   final int repMax;
   final int? rpeTarget;
   final int restSeconds;
+
+  /// Carga sugerida para a próxima sessão (preenchida pela progressão).
+  final double? nextSuggestedLoad;
   const ProgramExercise({
     required this.id,
     required this.programDayId,
@@ -1506,6 +1535,7 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
     required this.repMax,
     this.rpeTarget,
     required this.restSeconds,
+    this.nextSuggestedLoad,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1521,6 +1551,9 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
       map['rpe_target'] = Variable<int>(rpeTarget);
     }
     map['rest_seconds'] = Variable<int>(restSeconds);
+    if (!nullToAbsent || nextSuggestedLoad != null) {
+      map['next_suggested_load'] = Variable<double>(nextSuggestedLoad);
+    }
     return map;
   }
 
@@ -1537,6 +1570,9 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
           ? const Value.absent()
           : Value(rpeTarget),
       restSeconds: Value(restSeconds),
+      nextSuggestedLoad: nextSuggestedLoad == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nextSuggestedLoad),
     );
   }
 
@@ -1555,6 +1591,9 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
       repMax: serializer.fromJson<int>(json['repMax']),
       rpeTarget: serializer.fromJson<int?>(json['rpeTarget']),
       restSeconds: serializer.fromJson<int>(json['restSeconds']),
+      nextSuggestedLoad: serializer.fromJson<double?>(
+        json['nextSuggestedLoad'],
+      ),
     );
   }
   @override
@@ -1570,6 +1609,7 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
       'repMax': serializer.toJson<int>(repMax),
       'rpeTarget': serializer.toJson<int?>(rpeTarget),
       'restSeconds': serializer.toJson<int>(restSeconds),
+      'nextSuggestedLoad': serializer.toJson<double?>(nextSuggestedLoad),
     };
   }
 
@@ -1583,6 +1623,7 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
     int? repMax,
     Value<int?> rpeTarget = const Value.absent(),
     int? restSeconds,
+    Value<double?> nextSuggestedLoad = const Value.absent(),
   }) => ProgramExercise(
     id: id ?? this.id,
     programDayId: programDayId ?? this.programDayId,
@@ -1593,6 +1634,9 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
     repMax: repMax ?? this.repMax,
     rpeTarget: rpeTarget.present ? rpeTarget.value : this.rpeTarget,
     restSeconds: restSeconds ?? this.restSeconds,
+    nextSuggestedLoad: nextSuggestedLoad.present
+        ? nextSuggestedLoad.value
+        : this.nextSuggestedLoad,
   );
   ProgramExercise copyWithCompanion(ProgramExercisesCompanion data) {
     return ProgramExercise(
@@ -1613,6 +1657,9 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
       restSeconds: data.restSeconds.present
           ? data.restSeconds.value
           : this.restSeconds,
+      nextSuggestedLoad: data.nextSuggestedLoad.present
+          ? data.nextSuggestedLoad.value
+          : this.nextSuggestedLoad,
     );
   }
 
@@ -1627,7 +1674,8 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
           ..write('repMin: $repMin, ')
           ..write('repMax: $repMax, ')
           ..write('rpeTarget: $rpeTarget, ')
-          ..write('restSeconds: $restSeconds')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('nextSuggestedLoad: $nextSuggestedLoad')
           ..write(')'))
         .toString();
   }
@@ -1643,6 +1691,7 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
     repMax,
     rpeTarget,
     restSeconds,
+    nextSuggestedLoad,
   );
   @override
   bool operator ==(Object other) =>
@@ -1656,7 +1705,8 @@ class ProgramExercise extends DataClass implements Insertable<ProgramExercise> {
           other.repMin == this.repMin &&
           other.repMax == this.repMax &&
           other.rpeTarget == this.rpeTarget &&
-          other.restSeconds == this.restSeconds);
+          other.restSeconds == this.restSeconds &&
+          other.nextSuggestedLoad == this.nextSuggestedLoad);
 }
 
 class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
@@ -1669,6 +1719,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
   final Value<int> repMax;
   final Value<int?> rpeTarget;
   final Value<int> restSeconds;
+  final Value<double?> nextSuggestedLoad;
   const ProgramExercisesCompanion({
     this.id = const Value.absent(),
     this.programDayId = const Value.absent(),
@@ -1679,6 +1730,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
     this.repMax = const Value.absent(),
     this.rpeTarget = const Value.absent(),
     this.restSeconds = const Value.absent(),
+    this.nextSuggestedLoad = const Value.absent(),
   });
   ProgramExercisesCompanion.insert({
     this.id = const Value.absent(),
@@ -1690,6 +1742,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
     required int repMax,
     this.rpeTarget = const Value.absent(),
     this.restSeconds = const Value.absent(),
+    this.nextSuggestedLoad = const Value.absent(),
   }) : programDayId = Value(programDayId),
        exerciseId = Value(exerciseId),
        exerciseOrder = Value(exerciseOrder),
@@ -1706,6 +1759,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
     Expression<int>? repMax,
     Expression<int>? rpeTarget,
     Expression<int>? restSeconds,
+    Expression<double>? nextSuggestedLoad,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -1717,6 +1771,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
       if (repMax != null) 'rep_max': repMax,
       if (rpeTarget != null) 'rpe_target': rpeTarget,
       if (restSeconds != null) 'rest_seconds': restSeconds,
+      if (nextSuggestedLoad != null) 'next_suggested_load': nextSuggestedLoad,
     });
   }
 
@@ -1730,6 +1785,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
     Value<int>? repMax,
     Value<int?>? rpeTarget,
     Value<int>? restSeconds,
+    Value<double?>? nextSuggestedLoad,
   }) {
     return ProgramExercisesCompanion(
       id: id ?? this.id,
@@ -1741,6 +1797,7 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
       repMax: repMax ?? this.repMax,
       rpeTarget: rpeTarget ?? this.rpeTarget,
       restSeconds: restSeconds ?? this.restSeconds,
+      nextSuggestedLoad: nextSuggestedLoad ?? this.nextSuggestedLoad,
     );
   }
 
@@ -1774,6 +1831,9 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
     if (restSeconds.present) {
       map['rest_seconds'] = Variable<int>(restSeconds.value);
     }
+    if (nextSuggestedLoad.present) {
+      map['next_suggested_load'] = Variable<double>(nextSuggestedLoad.value);
+    }
     return map;
   }
 
@@ -1788,7 +1848,8 @@ class ProgramExercisesCompanion extends UpdateCompanion<ProgramExercise> {
           ..write('repMin: $repMin, ')
           ..write('repMax: $repMax, ')
           ..write('rpeTarget: $rpeTarget, ')
-          ..write('restSeconds: $restSeconds')
+          ..write('restSeconds: $restSeconds, ')
+          ..write('nextSuggestedLoad: $nextSuggestedLoad')
           ..write(')'))
         .toString();
   }
@@ -4060,6 +4121,7 @@ typedef $$ProgramExercisesTableCreateCompanionBuilder =
       required int repMax,
       Value<int?> rpeTarget,
       Value<int> restSeconds,
+      Value<double?> nextSuggestedLoad,
     });
 typedef $$ProgramExercisesTableUpdateCompanionBuilder =
     ProgramExercisesCompanion Function({
@@ -4072,6 +4134,7 @@ typedef $$ProgramExercisesTableUpdateCompanionBuilder =
       Value<int> repMax,
       Value<int?> rpeTarget,
       Value<int> restSeconds,
+      Value<double?> nextSuggestedLoad,
     });
 
 final class $$ProgramExercisesTableReferences
@@ -4187,6 +4250,11 @@ class $$ProgramExercisesTableFilterComposer
 
   ColumnFilters<int> get restSeconds => $composableBuilder(
     column: $table.restSeconds,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<double> get nextSuggestedLoad => $composableBuilder(
+    column: $table.nextSuggestedLoad,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -4306,6 +4374,11 @@ class $$ProgramExercisesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<double> get nextSuggestedLoad => $composableBuilder(
+    column: $table.nextSuggestedLoad,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$ProgramDaysTableOrderingComposer get programDayId {
     final $$ProgramDaysTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4384,6 +4457,11 @@ class $$ProgramExercisesTableAnnotationComposer
 
   GeneratedColumn<int> get restSeconds => $composableBuilder(
     column: $table.restSeconds,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<double> get nextSuggestedLoad => $composableBuilder(
+    column: $table.nextSuggestedLoad,
     builder: (column) => column,
   );
 
@@ -4502,6 +4580,7 @@ class $$ProgramExercisesTableTableManager
                 Value<int> repMax = const Value.absent(),
                 Value<int?> rpeTarget = const Value.absent(),
                 Value<int> restSeconds = const Value.absent(),
+                Value<double?> nextSuggestedLoad = const Value.absent(),
               }) => ProgramExercisesCompanion(
                 id: id,
                 programDayId: programDayId,
@@ -4512,6 +4591,7 @@ class $$ProgramExercisesTableTableManager
                 repMax: repMax,
                 rpeTarget: rpeTarget,
                 restSeconds: restSeconds,
+                nextSuggestedLoad: nextSuggestedLoad,
               ),
           createCompanionCallback:
               ({
@@ -4524,6 +4604,7 @@ class $$ProgramExercisesTableTableManager
                 required int repMax,
                 Value<int?> rpeTarget = const Value.absent(),
                 Value<int> restSeconds = const Value.absent(),
+                Value<double?> nextSuggestedLoad = const Value.absent(),
               }) => ProgramExercisesCompanion.insert(
                 id: id,
                 programDayId: programDayId,
@@ -4534,6 +4615,7 @@ class $$ProgramExercisesTableTableManager
                 repMax: repMax,
                 rpeTarget: rpeTarget,
                 restSeconds: restSeconds,
+                nextSuggestedLoad: nextSuggestedLoad,
               ),
           withReferenceMapper: (p0) => p0
               .map(

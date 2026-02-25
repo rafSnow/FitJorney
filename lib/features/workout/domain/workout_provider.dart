@@ -78,8 +78,16 @@ class ActiveWorkoutNotifier extends AsyncNotifier<WorkoutState?> {
 
     final lastLoads = <int, double>{};
     for (final ex in exercises) {
-      final load = await dao.getLastLoadForProgramExercise(ex.id);
-      if (load != null) lastLoads[ex.id] = load;
+      // Prioriza carga sugerida pela progressão confirmada
+      final suggested = await dao.getNextSuggestedLoad(ex.id);
+      if (suggested != null) {
+        lastLoads[ex.id] = suggested;
+        // Limpa a sugestão após consumí-la (one-shot)
+        await dao.updateNextSuggestedLoad(ex.id, null);
+      } else {
+        final load = await dao.getLastLoadForProgramExercise(ex.id);
+        if (load != null) lastLoads[ex.id] = load;
+      }
     }
 
     return WorkoutState(
