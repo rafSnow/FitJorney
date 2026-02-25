@@ -101,6 +101,13 @@ class AppStrings {
   static const noHistoryCta = 'Suas sessões de treino aparecerão aqui';
   static const duration = 'Duração';
   static const sessionDetail = 'Detalhes da Sessão';
+  static const filterAll = 'Todos';
+  static const filterWeek = 'Semana';
+  static const filterMonth = 'Mês';
+  static const progressionAchieved = 'Progressão atingida';
+  static const noSetsRecorded = 'Nenhuma série registrada';
+  static const repRangeLabel = 'reps';
+  static const setsCompleted = 'séries';
 
   // Progresso / Gráficos
   static const noProgress = 'Dados insuficientes';

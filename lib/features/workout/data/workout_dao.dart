@@ -4,6 +4,7 @@ import '../../../core/database/app_database.dart';
 import '../../exercises/data/exercises_table.dart';
 import '../../programs/data/program_days_table.dart';
 import '../../programs/data/program_exercises_table.dart';
+import '../../programs/data/programs_table.dart';
 import '../../programs/domain/program_exercise.dart' as program_domain;
 import '../domain/set_record.dart' as set_domain;
 import '../domain/workout_session.dart' as session_domain;
@@ -11,6 +12,16 @@ import 'sessions_table.dart';
 import 'set_records_table.dart';
 
 part 'workout_dao.g.dart';
+
+/// Dados de sessão enriquecidos para listagem do histórico.
+typedef SessionWithInfo = ({
+  int id,
+  DateTime startedAt,
+  DateTime? finishedAt,
+  String dayName,
+  String programName,
+  int programDayId,
+});
 
 /// DAO de sessões de treino — CRUD completo com auto-save por série.
 @DriftAccessor(
@@ -20,6 +31,7 @@ part 'workout_dao.g.dart';
     ProgramDays,
     ProgramExercises,
     Exercises,
+    Programs,
   ],
 )
 class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
@@ -338,5 +350,96 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
       exerciseType: ex.exerciseType,
       customIncrement: ex.customIncrement,
     );
+  }
+
+  // ─────────────── Histórico enriquecido ───────────────
+
+  /// Stream de sessões concluídas com nome do dia e do programa.
+  Stream<List<SessionWithInfo>> watchCompletedSessionsWithInfo() {
+    final query =
+        select(workoutSessions).join([
+            innerJoin(
+              programDays,
+              programDays.id.equalsExp(workoutSessions.programDayId),
+            ),
+            innerJoin(programs, programs.id.equalsExp(programDays.programId)),
+          ])
+          ..where(workoutSessions.status.equals('completed'))
+          ..orderBy([OrderingTerm.desc(workoutSessions.startedAt)]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        final session = row.readTable(workoutSessions);
+        final day = row.readTable(programDays);
+        final program = row.readTable(programs);
+        return (
+          id: session.id,
+          startedAt: session.startedAt,
+          finishedAt: session.finishedAt,
+          dayName: day.name,
+          programName: program.name,
+          programDayId: session.programDayId,
+        );
+      }).toList();
+    });
+  }
+
+  /// Busca o nome do programa a partir de um programDayId.
+  Future<String> getProgramNameForDay(int programDayId) async {
+    final query = select(programDays).join([
+      innerJoin(programs, programs.id.equalsExp(programDays.programId)),
+    ])..where(programDays.id.equals(programDayId));
+    final row = await query.getSingleOrNull();
+    if (row == null) return '';
+    return row.readTable(programs).name;
+  }
+
+  /// Busca as séries da sessão imediatamente anterior para um exercício.
+  /// Usado para análise de progressão em sessões históricas.
+  Future<List<set_domain.SetRecord>> getPreviousSetsForExercise(
+    int sessionId,
+    int programExerciseId,
+  ) async {
+    // Busca o horário de início da sessão atual
+    final currentQuery = select(workoutSessions)
+      ..where((s) => s.id.equals(sessionId));
+    final currentSession = await currentQuery.getSingleOrNull();
+    if (currentSession == null) return [];
+
+    // Encontra o sessionId da sessão concluída anterior que tenha esse exercício
+    final prevQuery =
+        select(setRecords).join([
+            innerJoin(
+              workoutSessions,
+              workoutSessions.id.equalsExp(setRecords.sessionId),
+            ),
+          ])
+          ..where(
+            setRecords.programExerciseId.equals(programExerciseId) &
+                workoutSessions.status.equals('completed') &
+                workoutSessions.startedAt.isSmallerThanValue(
+                  currentSession.startedAt,
+                ),
+          )
+          ..orderBy([OrderingTerm.desc(workoutSessions.startedAt)])
+          ..limit(1);
+
+    final prevResult = await prevQuery.getSingleOrNull();
+    if (prevResult == null) return [];
+    final prevSessionId = prevResult.read(setRecords.sessionId);
+    if (prevSessionId == null) return [];
+
+    // Busca todas as séries não-puladas daquela sessão para este exercício
+    final setsQuery = select(setRecords)
+      ..where(
+        (s) =>
+            s.sessionId.equals(prevSessionId) &
+            s.programExerciseId.equals(programExerciseId) &
+            s.wasSkipped.equals(false),
+      )
+      ..orderBy([(s) => OrderingTerm.asc(s.setNumber)]);
+
+    final rows = await setsQuery.get();
+    return rows.map(_setToDomain).toList();
   }
 }

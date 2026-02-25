@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/exercises/presentation/exercise_form_screen.dart';
 import '../../features/exercises/presentation/exercises_screen.dart';
 import '../../features/history/presentation/history_screen.dart';
+import '../../features/history/presentation/session_detail_screen.dart';
 import '../../features/programs/presentation/program_detail_screen.dart';
 import '../../features/programs/presentation/program_form_screen.dart';
 import '../../features/programs/presentation/programs_screen.dart';
@@ -13,7 +14,6 @@ import '../../features/workout/domain/workout_provider.dart';
 import '../../features/workout/presentation/workout_screen.dart';
 import '../../features/workout/presentation/workout_summary_screen.dart';
 import '../../shared/widgets/fj_button.dart';
-import '../../shared/widgets/placeholder_screen.dart';
 import '../constants/app_colors.dart';
 import '../constants/app_spacing.dart';
 import '../constants/app_strings.dart';
@@ -108,9 +108,11 @@ final appRouter = GoRouter(
     GoRoute(
       path: '/history/:sessionId',
       parentNavigatorKey: _rootNavigatorKey,
-      builder: (context, state) => PlaceholderScreen(
-        title: 'Sessão #${state.pathParameters['sessionId']}',
-      ),
+      builder: (context, state) {
+        final id = int.tryParse(state.pathParameters['sessionId'] ?? '');
+        if (id == null) return const HistoryScreen();
+        return SessionDetailScreen(sessionId: id);
+      },
     ),
   ],
 );
