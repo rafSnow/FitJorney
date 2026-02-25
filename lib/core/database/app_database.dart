@@ -9,6 +9,7 @@ import '../../features/programs/data/programs_dao.dart';
 import '../../features/programs/data/programs_table.dart';
 import '../../features/workout/data/sessions_table.dart';
 import '../../features/workout/data/set_records_table.dart';
+import '../../features/workout/data/workout_dao.dart';
 
 part 'app_database.g.dart';
 
@@ -21,7 +22,7 @@ part 'app_database.g.dart';
     WorkoutSessions,
     SetRecords,
   ],
-  daos: [ExercisesDao, ProgramsDao],
+  daos: [ExercisesDao, ProgramsDao, WorkoutDao],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
