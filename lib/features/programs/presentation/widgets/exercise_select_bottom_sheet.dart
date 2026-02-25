@@ -101,8 +101,8 @@ class _ExerciseSelectSheetState extends ConsumerState<_ExerciseSelectSheet> {
             Expanded(
               child: exercisesAsync.when(
                 loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) =>
-                    Center(child: Text('${AppStrings.genericError}\n$e')),
+                error: (_, __) =>
+                    Center(child: Text(AppStrings.errorLoadingExercises)),
                 data: (exercises) {
                   if (exercises.isEmpty) {
                     return EmptyState(

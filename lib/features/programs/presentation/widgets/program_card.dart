@@ -26,21 +26,24 @@ class ProgramCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          // Ícone com indicador de ativo
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: program.isActive
-                  ? theme.colorScheme.primaryContainer
-                  : theme.colorScheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-            ),
-            child: Icon(
-              program.isActive ? Icons.star : Icons.list_alt,
-              color: program.isActive
-                  ? theme.colorScheme.onPrimaryContainer
-                  : theme.colorScheme.onSurfaceVariant,
+          // Ícone com indicador de ativo (Hero animation)
+          Hero(
+            tag: 'program_icon_${program.id}',
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: program.isActive
+                    ? theme.colorScheme.primaryContainer
+                    : theme.colorScheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              ),
+              child: Icon(
+                program.isActive ? Icons.star : Icons.list_alt,
+                color: program.isActive
+                    ? theme.colorScheme.onPrimaryContainer
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -6,6 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../shared/widgets/empty_state.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 import '../domain/history_provider.dart';
 
 /// Meses abreviados em pt-BR.
@@ -92,15 +94,17 @@ class HistoryScreen extends ConsumerWidget {
           // ── Lista de sessões ──
           Expanded(
             child: sessionsAsync.when(
-              loading: () => const Center(child: CircularProgressIndicator()),
-              error: (e, _) =>
-                  Center(child: Text('${AppStrings.genericError}\n$e')),
+              loading: () => const SkeletonList(itemCount: 5),
+              error: (_, __) =>
+                  Center(child: Text(AppStrings.errorLoadingHistory)),
               data: (sessions) {
                 if (sessions.isEmpty) {
                   return EmptyState(
                     icon: Icons.history,
                     title: AppStrings.noHistory,
                     message: AppStrings.noHistoryCta,
+                    actionLabel: AppStrings.startWorkout,
+                    onAction: () => context.go('/'),
                   );
                 }
 
@@ -147,7 +151,10 @@ class _FilterChip extends StatelessWidget {
     return ChoiceChip(
       label: Text(label),
       selected: selected,
-      onSelected: (_) => onSelected(),
+      onSelected: (_) {
+        HapticFeedback.selectionClick();
+        onSelected();
+      },
       selectedColor: AppColors.primary.withValues(alpha: 0.15),
       labelStyle: TextStyle(
         color: selected ? AppColors.primary : null,

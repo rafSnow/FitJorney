@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/loading_overlay.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 import '../domain/programs_provider.dart';
 import 'widgets/program_card.dart';
 
@@ -20,10 +20,8 @@ class ProgramsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.programs)),
       body: programsAsync.when(
-        loading: () =>
-            const LoadingOverlay(isLoading: true, child: SizedBox.expand()),
-        error: (error, _) =>
-            Center(child: Text('${AppStrings.genericError}\n$error')),
+        loading: () => const SkeletonList(itemCount: 5),
+        error: (_, __) => Center(child: Text(AppStrings.errorLoadingPrograms)),
         data: (programs) {
           if (programs.isEmpty) {
             return EmptyState(

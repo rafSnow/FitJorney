@@ -109,6 +109,7 @@ class _FJNumericFieldState extends State<FJNumericField> {
             _RoundButton(
               icon: Icons.remove,
               onPressed: widget.value > widget.min ? _decrement : null,
+              semanticLabel: 'Diminuir ${widget.label}',
             ),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
@@ -135,6 +136,7 @@ class _FJNumericFieldState extends State<FJNumericField> {
             _RoundButton(
               icon: Icons.add,
               onPressed: widget.value < widget.max ? _increment : null,
+              semanticLabel: 'Aumentar ${widget.label}',
             ),
           ],
         ),
@@ -144,22 +146,31 @@ class _FJNumericFieldState extends State<FJNumericField> {
 }
 
 class _RoundButton extends StatelessWidget {
-  const _RoundButton({required this.icon, required this.onPressed});
+  const _RoundButton({
+    required this.icon,
+    required this.onPressed,
+    this.semanticLabel,
+  });
 
   final IconData icon;
   final VoidCallback? onPressed;
+  final String? semanticLabel;
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: IconButton.filled(
-        onPressed: onPressed,
-        icon: Icon(icon, size: 20),
-        style: IconButton.styleFrom(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: IconButton.filled(
+          onPressed: onPressed,
+          icon: Icon(icon, size: 20),
+          style: IconButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+            ),
           ),
         ),
       ),

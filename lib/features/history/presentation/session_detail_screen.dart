@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
-import '../../../shared/widgets/loading_overlay.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 import '../../workout/domain/set_record.dart';
 import '../../workout/presentation/progression_badge_widget.dart';
 import '../domain/history_provider.dart';
@@ -69,11 +69,14 @@ class SessionDetailScreen extends ConsumerWidget {
     return detailAsync.when(
       loading: () => Scaffold(
         appBar: AppBar(title: const Text(AppStrings.sessionDetail)),
-        body: const LoadingOverlay(isLoading: true, child: SizedBox.expand()),
+        body: const Padding(
+          padding: EdgeInsets.all(AppSpacing.md),
+          child: SkeletonList(itemCount: 4),
+        ),
       ),
-      error: (e, _) => Scaffold(
+      error: (_, __) => Scaffold(
         appBar: AppBar(title: const Text(AppStrings.sessionDetail)),
-        body: Center(child: Text('${AppStrings.genericError}\n$e')),
+        body: Center(child: Text(AppStrings.errorLoadingSession)),
       ),
       data: (detail) {
         if (detail == null) {

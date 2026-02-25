@@ -33,9 +33,9 @@ class ProgramDetailScreen extends ConsumerWidget {
     return programAsync.when(
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (e, _) => Scaffold(
+      error: (_, __) => Scaffold(
         appBar: AppBar(),
-        body: Center(child: Text('${AppStrings.genericError}\n$e')),
+        body: Center(child: Text(AppStrings.errorLoadingPrograms)),
       ),
       data: (program) {
         if (program == null) {
@@ -124,8 +124,8 @@ class _ProgramDetailView extends ConsumerWidget {
           daysAsync.when(
             loading: () =>
                 const LoadingOverlay(isLoading: true, child: SizedBox.expand()),
-            error: (e, _) =>
-                Center(child: Text('${AppStrings.genericError}\n$e')),
+            error: (_, __) =>
+                Center(child: Text(AppStrings.errorLoadingPrograms)),
             data: (days) {
               if (days.isEmpty) {
                 return EmptyState(
@@ -338,9 +338,9 @@ class _DaySection extends ConsumerWidget {
               padding: EdgeInsets.all(AppSpacing.md),
               child: Center(child: CircularProgressIndicator()),
             ),
-            error: (e, _) => Padding(
+            error: (_, __) => Padding(
               padding: const EdgeInsets.all(AppSpacing.md),
-              child: Text(AppStrings.genericError),
+              child: Text(AppStrings.errorLoadingExercises),
             ),
             data: (exercises) {
               if (exercises.isEmpty) {

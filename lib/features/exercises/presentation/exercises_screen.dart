@@ -5,7 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../shared/widgets/empty_state.dart';
-import '../../../shared/widgets/loading_overlay.dart';
+import '../../../shared/widgets/shimmer_loading.dart';
 import '../domain/exercises_provider.dart';
 import 'widgets/exercise_card.dart';
 
@@ -63,12 +63,9 @@ class _ExercisesScreenState extends ConsumerState<ExercisesScreen> {
           // Lista
           Expanded(
             child: exercisesAsync.when(
-              loading: () => const LoadingOverlay(
-                isLoading: true,
-                child: SizedBox.expand(),
-              ),
-              error: (error, _) =>
-                  Center(child: Text('${AppStrings.genericError}\n$error')),
+              loading: () => const SkeletonList(itemCount: 6),
+              error: (_, __) =>
+                  Center(child: Text(AppStrings.errorLoadingExercises)),
               data: (exercises) {
                 if (exercises.isEmpty) {
                   return EmptyState(

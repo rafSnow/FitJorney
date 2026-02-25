@@ -111,7 +111,7 @@ class _ProgramFormScreenState extends ConsumerState<ProgramFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppStrings.genericError}\n$e'),
+            content: Text(AppStrings.errorSavingProgram),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
           ),

@@ -120,7 +120,7 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppStrings.genericError}\n$e'),
+            content: Text(AppStrings.errorDeletingExercise),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
@@ -176,7 +176,7 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${AppStrings.genericError}\n$e'),
+            content: Text(AppStrings.errorSavingExercise),
             behavior: SnackBarBehavior.floating,
             backgroundColor: Theme.of(context).colorScheme.error,
           ),
@@ -197,9 +197,9 @@ class _ExerciseFormScreenState extends ConsumerState<ExerciseFormScreen> {
           appBar: AppBar(title: const Text(AppStrings.editExercise)),
           body: const Center(child: CircularProgressIndicator()),
         ),
-        error: (error, _) => Scaffold(
+        error: (_, __) => Scaffold(
           appBar: AppBar(title: const Text(AppStrings.editExercise)),
-          body: Center(child: Text(AppStrings.genericError)),
+          body: Center(child: Text(AppStrings.errorLoadingExercises)),
         ),
         data: (exercise) {
           if (exercise == null) {

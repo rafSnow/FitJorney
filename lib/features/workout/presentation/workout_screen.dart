@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../shared/widgets/animated_check_overlay.dart';
 import '../../../shared/widgets/fj_button.dart';
 import '../../../shared/widgets/fj_numeric_field.dart';
 import '../../../shared/widgets/loading_overlay.dart';
@@ -32,6 +33,7 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   int _reps = 0;
   int? _rpe;
   bool _isConfirming = false;
+  bool _showCheck = false;
 
   // Timer de sessão
   Timer? _sessionTimer;
@@ -119,7 +121,11 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
         .read(restTimerProvider.notifier)
         .start(restSeconds, exerciseName: ex.exerciseName ?? '');
 
-    setState(() => _isConfirming = false);
+    // 4.2 — Micro-animação: check animado ao confirmar série
+    setState(() {
+      _isConfirming = false;
+      _showCheck = true;
+    });
   }
 
   Future<void> _skipSet(WorkoutState workout) async {
@@ -212,8 +218,8 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
       loading: () => const Scaffold(
         body: LoadingOverlay(isLoading: true, child: SizedBox.expand()),
       ),
-      error: (e, _) =>
-          Scaffold(body: Center(child: Text('${AppStrings.genericError}\n$e'))),
+      error: (_, __) =>
+          Scaffold(body: Center(child: Text(AppStrings.errorLoadingWorkout))),
       data: (workout) {
         if (workout == null) return _buildNoWorkout(context);
         if (workout.session.isCompleted) {
@@ -322,58 +328,76 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           ),
         ],
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: workout.exercises.length,
-              onPageChanged: (idx) => _onPageChanged(idx, workout),
-              physics: const BouncingScrollPhysics(),
-              itemBuilder: (context, index) {
-                final ex = workout.exercises[index];
-                final sets = workout.setsForExercise(ex.id);
-                final isCurrent = index == currentIdx;
-                return _ExercisePage(
-                  exercise: ex,
-                  recordedSets: sets,
-                  isCurrentPage: isCurrent,
-                  load: isCurrent ? _load : workout.lastLoadFor(ex.id),
-                  reps: isCurrent ? _reps : ex.repMax,
-                  rpe: isCurrent ? _rpe : ex.rpeTarget,
-                  onLoadChanged: (v) => setState(() => _load = v),
-                  onRepsChanged: (v) => setState(() => _reps = v.toInt()),
-                  onRpeChanged: (v) => setState(() => _rpe = v),
-                );
-              },
+          Column(
+            children: [
+              Expanded(
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: workout.exercises.length,
+                  onPageChanged: (idx) => _onPageChanged(idx, workout),
+                  physics: const BouncingScrollPhysics(),
+                  itemBuilder: (context, index) {
+                    final ex = workout.exercises[index];
+                    final sets = workout.setsForExercise(ex.id);
+                    final isCurrent = index == currentIdx;
+                    return _ExercisePage(
+                      exercise: ex,
+                      recordedSets: sets,
+                      isCurrentPage: isCurrent,
+                      load: isCurrent ? _load : workout.lastLoadFor(ex.id),
+                      reps: isCurrent ? _reps : ex.repMax,
+                      rpe: isCurrent ? _rpe : ex.rpeTarget,
+                      onLoadChanged: (v) => setState(() => _load = v),
+                      onRepsChanged: (v) => setState(() => _reps = v.toInt()),
+                      onRpeChanged: (v) => setState(() => _rpe = v),
+                    );
+                  },
+                ),
+              ),
+              _ExerciseDots(
+                count: totalExercises,
+                currentIndex: currentIdx,
+                completedFlags: List.generate(
+                  totalExercises,
+                  (i) => workout.isExerciseComplete(i),
+                ),
+              ),
+              // 2.2.3 — Cronômetro de descanso (aparece entre dots e action bar)
+              RestTimerWidget(
+                state: restTimer,
+                onCancel: () => ref.read(restTimerProvider.notifier).cancel(),
+                onRestart: () => ref.read(restTimerProvider.notifier).restart(),
+              ),
+              _BottomActionBar(
+                workout: workout,
+                currentIdx: currentIdx,
+                isConfirming: _isConfirming,
+                onConfirm: () => _confirmSet(workout),
+                onSkip: () => _skipSet(workout),
+                onPrev: currentIdx > 0 ? () => _goToPage(currentIdx - 1) : null,
+                onNext: currentIdx < totalExercises - 1
+                    ? () => _goToPage(currentIdx + 1)
+                    : null,
+                onFinish: () => _confirmFinish(workout),
+              ),
+            ],
+          ),
+
+          // 4.2 — Overlay de check animado
+          if (_showCheck)
+            Positioned.fill(
+              child: IgnorePointer(
+                child: Center(
+                  child: AnimatedCheckOverlay(
+                    onComplete: () {
+                      if (mounted) setState(() => _showCheck = false);
+                    },
+                  ),
+                ),
+              ),
             ),
-          ),
-          _ExerciseDots(
-            count: totalExercises,
-            currentIndex: currentIdx,
-            completedFlags: List.generate(
-              totalExercises,
-              (i) => workout.isExerciseComplete(i),
-            ),
-          ),
-          // 2.2.3 — Cronômetro de descanso (aparece entre dots e action bar)
-          RestTimerWidget(
-            state: restTimer,
-            onCancel: () => ref.read(restTimerProvider.notifier).cancel(),
-            onRestart: () => ref.read(restTimerProvider.notifier).restart(),
-          ),
-          _BottomActionBar(
-            workout: workout,
-            currentIdx: currentIdx,
-            isConfirming: _isConfirming,
-            onConfirm: () => _confirmSet(workout),
-            onSkip: () => _skipSet(workout),
-            onPrev: currentIdx > 0 ? () => _goToPage(currentIdx - 1) : null,
-            onNext: currentIdx < totalExercises - 1
-                ? () => _goToPage(currentIdx + 1)
-                : null,
-            onFinish: () => _confirmFinish(workout),
-          ),
         ],
       ),
     );
@@ -745,30 +769,35 @@ class _RpeChip extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(right: AppSpacing.xs),
-      child: GestureDetector(
-        onTap: () {
-          HapticFeedback.selectionClick();
-          onTap();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 44,
-          height: 44,
-          decoration: BoxDecoration(
-            color: isSelected ? color : color.withValues(alpha: 0.12),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: isSelected ? color : Colors.transparent,
-              width: 1.5,
+      child: Semantics(
+        label: label == '—' ? 'RPE nenhum' : 'RPE $label',
+        selected: isSelected,
+        button: true,
+        child: GestureDetector(
+          onTap: () {
+            HapticFeedback.selectionClick();
+            onTap();
+          },
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isSelected ? color : color.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: isSelected ? color : Colors.transparent,
+                width: 1.5,
+              ),
             ),
-          ),
-          child: Center(
-            child: Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : color,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
+            child: Center(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : color,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                ),
               ),
             ),
           ),

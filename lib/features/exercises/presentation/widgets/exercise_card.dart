@@ -27,17 +27,20 @@ class ExerciseCard extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          // Ícone do grupo muscular
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer,
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-            ),
-            child: Icon(
-              _iconForMuscleGroup(exercise.muscleGroup.value),
-              color: theme.colorScheme.onPrimaryContainer,
+          // Ícone do grupo muscular (Hero animation para transição)
+          Hero(
+            tag: 'exercise_icon_${exercise.id}',
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer,
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+              ),
+              child: Icon(
+                _iconForMuscleGroup(exercise.muscleGroup.value),
+                color: theme.colorScheme.onPrimaryContainer,
+              ),
             ),
           ),
           const SizedBox(width: AppSpacing.md),

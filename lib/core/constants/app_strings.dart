@@ -124,8 +124,29 @@ class AppStrings {
   static const noExerciseDataCta = 'Registre treinos para ver a evolução';
   static const trained = 'Treinou';
 
+  // Timeout de inatividade
+  static const staleSessionTitle = 'Treino em aberto';
+  static const staleSessionMessage =
+      'Você tem um treino iniciado há mais de 3 horas. Deseja continuar ou descartá-lo?';
+  static const continueWorkout = 'Continuar';
+  static const discardWorkout = 'Descartar';
+
   // Erros
   static const genericError = 'Algo deu errado. Tente novamente.';
+  static const errorLoadingExercises =
+      'Não foi possível carregar os exercícios.';
+  static const errorLoadingPrograms = 'Não foi possível carregar os programas.';
+  static const errorLoadingHistory = 'Não foi possível carregar o histórico.';
+  static const errorLoadingSession =
+      'Não foi possível carregar os detalhes da sessão.';
+  static const errorLoadingWorkout =
+      'Não foi possível carregar o treino. Tente novamente.';
+  static const errorSavingExercise =
+      'Não foi possível salvar o exercício. Tente novamente.';
+  static const errorDeletingExercise =
+      'Não foi possível excluir o exercício. Tente novamente.';
+  static const errorSavingProgram =
+      'Não foi possível salvar o programa. Tente novamente.';
   static const fieldRequired = 'Este campo é obrigatório';
   static const cannotDeleteActiveProgram =
       'Não é possível excluir: este exercício está em um programa ativo.';

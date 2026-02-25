@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -11,6 +12,7 @@ import '../../features/programs/presentation/program_form_screen.dart';
 import '../../features/programs/presentation/programs_screen.dart';
 import '../../features/progress/presentation/progress_screen.dart';
 import '../../features/workout/domain/workout_provider.dart';
+import '../../features/workout/domain/workout_state.dart';
 import '../../features/workout/presentation/workout_screen.dart';
 import '../../features/workout/presentation/workout_summary_screen.dart';
 import '../../shared/widgets/fj_button.dart';
@@ -118,17 +120,69 @@ final appRouter = GoRouter(
 );
 
 /// Home screen — ponto de entrada para iniciar ou retomar treino.
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  bool _staleDialogShown = false;
+
+  /// Verifica se há sessão in_progress > 3 horas e mostra diálogo.
+  void _checkStaleSession(WorkoutState? workout) {
+    if (_staleDialogShown || workout == null) return;
+    if (!workout.session.isInProgress) return;
+
+    final elapsed = DateTime.now().difference(workout.session.startedAt);
+    if (elapsed.inHours < 3) return;
+
+    _staleDialogShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          icon: const Icon(Icons.timer_off_outlined, size: 40),
+          title: const Text(AppStrings.staleSessionTitle),
+          content: const Text(AppStrings.staleSessionMessage),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                ref.read(activeWorkoutProvider.notifier).abandonWorkout();
+              },
+              child: Text(
+                AppStrings.discardWorkout,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.of(ctx).pop();
+                context.push('/workout');
+              },
+              child: const Text(AppStrings.continueWorkout),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final workoutAsync = ref.watch(activeWorkoutProvider);
     final nextDayAsync = ref.watch(nextWorkoutDayProvider);
     final theme = Theme.of(context);
 
     final hasActiveSession =
         workoutAsync.valueOrNull?.session.isInProgress == true;
+
+    // 4.9 — Timeout de inatividade
+    _checkStaleSession(workoutAsync.valueOrNull);
 
     return Scaffold(
       appBar: AppBar(title: const Text(AppStrings.appName)),
@@ -328,6 +382,7 @@ class HomeScreen extends ConsumerWidget {
                   label: AppStrings.startWorkout,
                   icon: Icons.fitness_center,
                   onPressed: () async {
+                    HapticFeedback.mediumImpact();
                     await ref
                         .read(activeWorkoutProvider.notifier)
                         .startWorkout(day.id);

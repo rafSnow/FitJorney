@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_strings.dart';
+import '../../../shared/widgets/animated_check_overlay.dart';
 import '../../../shared/widgets/fj_button.dart';
 import '../../../shared/widgets/loading_overlay.dart';
 import '../../programs/domain/program_exercise.dart';
@@ -35,7 +36,8 @@ final _summaryProgressionProvider = FutureProvider.autoDispose
         final details = await dao.getExerciseDetailsForProgression(ex.id);
         double increment = 2.5; // fallback
         if (details != null) {
-          increment = details.customIncrement ??
+          increment =
+              details.customIncrement ??
               ProgressionConstants.getSuggestedIncrement(
                 details.muscleSize == 'large'
                     ? MuscleSize.large
@@ -78,9 +80,9 @@ class WorkoutSummaryScreen extends ConsumerWidget {
       loading: () => const Scaffold(
         body: LoadingOverlay(isLoading: true, child: SizedBox.expand()),
       ),
-      error: (e, _) => Scaffold(
+      error: (_, __) => Scaffold(
         appBar: AppBar(title: const Text(AppStrings.workoutSummary)),
-        body: Center(child: Text('${AppStrings.genericError}\n$e')),
+        body: Center(child: Text(AppStrings.errorLoadingWorkout)),
       ),
       data: (workout) {
         if (workout == null) {
@@ -112,47 +114,62 @@ class _SummaryContent extends ConsumerWidget {
     final progressionAsync = ref.watch(_summaryProgressionProvider(workout));
     final progressions = progressionAsync.valueOrNull ?? {};
 
+    final hasProgression = progressions.values.any((p) => p.hasAction);
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
         title: Text(AppStrings.workoutSummary),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppSpacing.md),
+      body: Stack(
         children: [
-          // ── Header: duração e nome do dia ──
-          _SummaryHeader(
-            dayName: workout.dayName,
-            duration: formatDuration(workout.session.elapsed),
-            totalExercises: workout.exercises.length,
+          ListView(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            children: [
+              // ── Header: duração e nome do dia ──
+              _SummaryHeader(
+                dayName: workout.dayName,
+                duration: formatDuration(workout.session.elapsed),
+                totalExercises: workout.exercises.length,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+
+              // ── Exercícios ──
+              ...workout.exercises.map((ex) {
+                final sets = workout.setsForExercise(ex.id);
+                final progression = progressions[ex.id];
+                return _ExerciseSummaryCard(
+                  exercise: ex,
+                  sets: sets,
+                  progression: progression,
+                  currentLoad: workout.lastLoadFor(ex.id),
+                );
+              }),
+
+              const SizedBox(height: AppSpacing.lg),
+
+              // ── Concluir ──
+              FJButton(
+                label: 'Concluir',
+                icon: Icons.home_outlined,
+                onPressed: () {
+                  HapticFeedback.heavyImpact();
+                  ref.read(activeWorkoutProvider.notifier).resetAfterSummary();
+                  context.go('/');
+                },
+              ),
+              const SizedBox(height: AppSpacing.md),
+            ],
           ),
-          const SizedBox(height: AppSpacing.lg),
 
-          // ── Exercícios ──
-          ...workout.exercises.map((ex) {
-            final sets = workout.setsForExercise(ex.id);
-            final progression = progressions[ex.id];
-            return _ExerciseSummaryCard(
-              exercise: ex,
-              sets: sets,
-              progression: progression,
-              currentLoad: workout.lastLoadFor(ex.id),
-            );
-          }),
-
-          const SizedBox(height: AppSpacing.lg),
-
-          // ── Concluir ──
-          FJButton(
-            label: 'Concluir',
-            icon: Icons.home_outlined,
-            onPressed: () {
-              HapticFeedback.heavyImpact();
-              ref.read(activeWorkoutProvider.notifier).resetAfterSummary();
-              context.go('/');
-            },
-          ),
-          const SizedBox(height: AppSpacing.md),
+          // 4.2 — Celebração com confetti quando progressão detectada
+          if (hasProgression)
+            Positioned(
+              top: 80,
+              left: 0,
+              right: 0,
+              child: IgnorePointer(child: Center(child: CelebrationEffect())),
+            ),
         ],
       ),
     );
@@ -278,7 +295,10 @@ class _ExerciseSummaryCard extends ConsumerWidget {
   final double currentLoad;
   final ProgressionResult? progression;
 
-  Future<void> _handleProgressionTap(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleProgressionTap(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     if (progression == null || !progression!.hasAction) return;
 
     final confirmedLoad = await showProgressionConfirmDialog(
@@ -417,5 +437,3 @@ class _ExerciseSummaryCard extends ConsumerWidget {
     );
   }
 }
-
-
