@@ -442,4 +442,127 @@ class WorkoutDao extends DatabaseAccessor<AppDatabase> with _$WorkoutDaoMixin {
     final rows = await setsQuery.get();
     return rows.map(_setToDomain).toList();
   }
+
+  // ─────────────── Progress / Gráficos ───────────────
+
+  /// Retorna a carga máxima por sessão para um exercício (por exerciseId global).
+  /// Usado para o gráfico de evolução de carga.
+  Future<List<({DateTime date, double maxLoad, int reps})>>
+  getLoadHistoryForExercise(int exerciseId) async {
+    // Busca todos os programExercises para este exerciseId
+    final peQuery = select(programExercises)
+      ..where((pe) => pe.exerciseId.equals(exerciseId));
+    final peIds = (await peQuery.get()).map((pe) => pe.id).toList();
+    if (peIds.isEmpty) return [];
+
+    // Busca sets não-pulados com carga registrada para qualquer desses programExerciseIds
+    final query =
+        select(setRecords).join([
+            innerJoin(
+              workoutSessions,
+              workoutSessions.id.equalsExp(setRecords.sessionId),
+            ),
+          ])
+          ..where(
+            setRecords.programExerciseId.isIn(peIds) &
+                setRecords.wasSkipped.equals(false) &
+                setRecords.loadKg.isNotNull() &
+                workoutSessions.status.equals('completed'),
+          )
+          ..orderBy([OrderingTerm.asc(workoutSessions.startedAt)]);
+
+    final rows = await query.get();
+    if (rows.isEmpty) return [];
+
+    // Agrupar por sessão e pegar a carga máxima
+    final bySession = <int, ({DateTime date, double maxLoad, int reps})>{};
+    for (final row in rows) {
+      final s = row.readTable(setRecords);
+      final ws = row.readTable(workoutSessions);
+      final sessionId = s.sessionId;
+      final load = s.loadKg ?? 0.0;
+      final existing = bySession[sessionId];
+      if (existing == null || load > existing.maxLoad) {
+        bySession[sessionId] = (
+          date: ws.startedAt,
+          maxLoad: load,
+          reps: s.repsCompleted ?? 0,
+        );
+      }
+    }
+
+    return bySession.values.toList()..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  /// Retorna as datas de treinos concluídos na semana atual (segunda a domingo).
+  Future<List<DateTime>> getWorkoutDatesThisWeek() async {
+    final now = DateTime.now();
+    // Calcular segunda-feira da semana atual
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final startOfWeek = DateTime(monday.year, monday.month, monday.day);
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+    final query = select(workoutSessions)
+      ..where(
+        (s) =>
+            s.status.equals('completed') &
+            s.startedAt.isBiggerOrEqualValue(startOfWeek) &
+            s.startedAt.isSmallerThanValue(endOfWeek),
+      );
+
+    final rows = await query.get();
+    // Retorna datas únicas (apenas o dia)
+    final dates = <DateTime>{};
+    for (final row in rows) {
+      final d = row.startedAt;
+      dates.add(DateTime(d.year, d.month, d.day));
+    }
+    return dates.toList()..sort();
+  }
+
+  /// Retorna o volume semanal por grupo muscular (total de séries concluídas).
+  Future<List<({String muscleGroup, int totalSets})>>
+  getWeeklyVolumeByMuscleGroup() async {
+    final now = DateTime.now();
+    final monday = now.subtract(Duration(days: now.weekday - 1));
+    final startOfWeek = DateTime(monday.year, monday.month, monday.day);
+    final endOfWeek = startOfWeek.add(const Duration(days: 7));
+
+    final query =
+        select(setRecords).join([
+          innerJoin(
+            workoutSessions,
+            workoutSessions.id.equalsExp(setRecords.sessionId),
+          ),
+          innerJoin(
+            programExercises,
+            programExercises.id.equalsExp(setRecords.programExerciseId),
+          ),
+          innerJoin(
+            exercises,
+            exercises.id.equalsExp(programExercises.exerciseId),
+          ),
+        ])..where(
+          workoutSessions.status.equals('completed') &
+              workoutSessions.startedAt.isBiggerOrEqualValue(startOfWeek) &
+              workoutSessions.startedAt.isSmallerThanValue(endOfWeek) &
+              setRecords.wasSkipped.equals(false),
+        );
+
+    final rows = await query.get();
+
+    final volumeMap = <String, int>{};
+    for (final row in rows) {
+      final ex = row.readTable(exercises);
+      volumeMap[ex.muscleGroup] = (volumeMap[ex.muscleGroup] ?? 0) + 1;
+    }
+
+    final result =
+        volumeMap.entries
+            .map((e) => (muscleGroup: e.key, totalSets: e.value))
+            .toList()
+          ..sort((a, b) => b.totalSets.compareTo(a.totalSets));
+
+    return result;
+  }
 }

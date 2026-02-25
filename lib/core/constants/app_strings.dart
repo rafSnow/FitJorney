@@ -114,6 +114,15 @@ class AppStrings {
   static const noProgressCta = 'Treine mais para ver sua evolução';
   static const weeklyStreak = 'Frequência semanal';
   static const loadEvolution = 'Evolução de carga';
+  static const selectExerciseToView = 'Selecione um exercício';
+  static const maxLoad = 'Carga máx.';
+  static const date = 'Data';
+  static const loadHistory = 'Histórico de cargas';
+  static const weeklyVolume = 'Volume semanal';
+  static const totalSets = 'séries totais';
+  static const noExerciseData = 'Sem dados para este exercício';
+  static const noExerciseDataCta = 'Registre treinos para ver a evolução';
+  static const trained = 'Treinou';
 
   // Erros
   static const genericError = 'Algo deu errado. Tente novamente.';
